@@ -4,7 +4,7 @@ FFmpeg README
 FFmpeg is a collection of libraries and tools to process multimedia content
 such as audio, video, subtitles and related metadata.
 
-## This fork of FFmpeg has a single addition: handling unexpected stream terminations.
+### This fork of FFmpeg has a single addition: handling unexpected stream terminations.
 
 The file libavformat/utils.c has the routine av_read_frame() modified to call the 
 library client's I/O Interrupt Callback within the stream packet reading forever
@@ -13,18 +13,18 @@ application can monitor IP and USB streams for the unexpected event of stream lo
 Unexpected stream termination is identified by a call to av_read_frame() simply taking 
 too long. When calling av_read_frame() with an installed I/O Interrupt Callback, every
 loop attempt to read from the stream also receives an I/O Interrupt Callback. Within
-The I/O Interrupt Callback the library client simply checks the clock - if this read
+the I/O Interrupt Callback the library client simply checks the clock - if this read
 is taking too long, return true to signal a stream's unexpected termination. 
 
 The I/O Interrupt Callback looks like:
 
-  int interrupt_callback( void *context );
+  `int interrupt_callback( void *context );`
   
 And it is installed by setting pointers on the AVFormatContext:
  
-  AVFormatContext* p_format_context = avformat_alloc_context();
+  `AVFormatContext* p_format_context = avformat_alloc_context();
   p_format_context->interrupt_callback.callback = FFVideo_FrameMgr::interrupt_callback;
-  p_format_context->interrupt_callback.opaque = mp_frameMgr;
+  p_format_context->interrupt_callback.opaque = mp_frameMgr;`
 
 This is the only other modification to FFmpeg. 
 
