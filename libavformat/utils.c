@@ -1682,6 +1682,19 @@ int av_read_frame(AVFormatContext *s, AVPacket *pkt)
     }
 
     for (;;) {
+        
+        //
+        // Blake Senftner modification for unexpected stream termination, 
+        // such as internet/LAN signal loss or USB webcam's cable is pulled.
+        // see libav-user 2/1/2017
+        if (ff_check_interrupt(&s->interrupt_callback)) {
+                ret = AVERROR_EXIT;
+                av_log(s, AV_LOG_DEBUG, "interrupted\n" );
+                return ret;
+        }
+        // end Blake modification
+        //
+        
         PacketList *pktl = s->internal->packet_buffer;
 
         if (pktl) {
