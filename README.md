@@ -21,12 +21,15 @@ The I/O Interrupt Callback looks like:
   `int interrupt_callback( void *context );`
   
 And it is installed by setting pointers on the AVFormatContext:
- 
-  `AVFormatContext* p_format_context = avformat_alloc_context();`
-  `p_format_context->interrupt_callback.callback = FFVideo_FrameMgr::interrupt_callback;`
-  `p_format_context->interrupt_callback.opaque = mp_frameMgr;`
+ ```
+  AVFormatContext* p_format_context = avformat_alloc_context();
+  p_format_context->interrupt_callback.callback = FFVideo_FrameMgr::interrupt_callback;
+  p_format_context->interrupt_callback.opaque = mp_frameMgr;
+```
+Then when calling av_read_frame() your I/O Interrupt Callback is repeatedly called. 
+Just check the time then for being too long, and return true if too long.
 
-This is the only other modification to FFmpeg. 
+This is the only modification to FFmpeg in this fork. 
 
 ## Libraries
 
