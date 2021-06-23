@@ -22,9 +22,9 @@ The I/O Interrupt Callback looks like:
   
 And it is installed by setting pointers on the AVFormatContext:
  
-  `AVFormatContext* p_format_context = avformat_alloc_context();
-  p_format_context->interrupt_callback.callback = FFVideo_FrameMgr::interrupt_callback;
-  p_format_context->interrupt_callback.opaque = mp_frameMgr;`
+  `AVFormatContext* p_format_context = avformat_alloc_context();`
+  `p_format_context->interrupt_callback.callback = FFVideo_FrameMgr::interrupt_callback;`
+  `p_format_context->interrupt_callback.opaque = mp_frameMgr;`
 
 This is the only other modification to FFmpeg. 
 
