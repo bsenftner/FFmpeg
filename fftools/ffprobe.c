@@ -33,6 +33,7 @@
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 #include "libavutil/bprint.h"
+#include "libavutil/channel_layout.h"
 #include "libavutil/display.h"
 #include "libavutil/hash.h"
 #include "libavutil/hdr_dynamic_metadata.h"
@@ -1682,9 +1683,9 @@ static void xml_print_section_header(WriterContext *wctx)
         wctx->section[wctx->level-1] : NULL;
 
     if (wctx->level == 0) {
-        const char *qual = " xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance' "
-            "xmlns:ffprobe='http://www.ffmpeg.org/schema/ffprobe' "
-            "xsi:schemaLocation='http://www.ffmpeg.org/schema/ffprobe ffprobe.xsd'";
+        const char *qual = " xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" "
+            "xmlns:ffprobe=\"http://www.ffmpeg.org/schema/ffprobe\" "
+            "xsi:schemaLocation=\"http://www.ffmpeg.org/schema/ffprobe ffprobe.xsd\"";
 
         printf("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
         printf("<%sffprobe%s>\n",

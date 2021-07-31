@@ -1014,7 +1014,7 @@ static int dwa_uncompress(EXRContext *s, const uint8_t *src, int compressed_size
     dc_count = AV_RL64(src + 72);
     ac_compression = AV_RL64(src + 80);
 
-    if (compressed_size < 88LL + lo_size + ac_size + dc_size + rle_csize)
+    if (compressed_size < (uint64_t)(lo_size | ac_size | dc_size | rle_csize) || compressed_size < 88LL + lo_size + ac_size + dc_size + rle_csize)
         return AVERROR_INVALIDDATA;
 
     bytestream2_init(&gb, src + 88, compressed_size - 88);
@@ -1298,6 +1298,9 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
          /* bytes to add at the right of the display window */
         axmax = FFMAX(0, (avctx->width - (s->xmax + 1))) * step;
     }
+
+    if (avctx->max_pixels && uncompressed_size > avctx->max_pixels * 16LL)
+        return AVERROR_INVALIDDATA;
 
     if (data_size < uncompressed_size || s->is_tile) { /* td->tmp is use for tile reorganization */
         av_fast_padded_malloc(&td->tmp, &td->tmp_size, uncompressed_size);

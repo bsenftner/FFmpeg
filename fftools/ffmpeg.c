@@ -1287,6 +1287,7 @@ static void do_video_out(OutputFile *of,
         }
     }
     ost->last_dropped = nb_frames == nb0_frames && next_picture;
+    ost->dropped_keyframe = ost->last_dropped && next_picture && next_picture->key_frame;
 
     /* duplicates frame if needed */
     for (i = 0; i < nb_frames; i++) {
@@ -1347,6 +1348,11 @@ static void do_video_out(OutputFile *of,
                    && in_picture->key_frame==1
                    && !i) {
             forced_keyframe = 1;
+        } else if (   ost->forced_keyframes
+                   && !strncmp(ost->forced_keyframes, "source_no_drop", 14)
+                   && !i) {
+            forced_keyframe = (in_picture->key_frame == 1) || ost->dropped_keyframe;
+            ost->dropped_keyframe = 0;
         }
 
         if (forced_keyframe) {
@@ -2082,9 +2088,11 @@ static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *p
     }
 
     if (f->recording_time != INT64_MAX) {
-        start_time = f->ctx->start_time;
-        if (f->start_time != AV_NOPTS_VALUE && copy_ts)
-            start_time += f->start_time;
+        start_time = 0;
+        if (copy_ts) {
+            start_time += f->start_time != AV_NOPTS_VALUE ? f->start_time : 0;
+            start_time += start_at_zero ? 0 : f->ctx->start_time;
+        }
         if (ist->pts >= f->recording_time + start_time) {
             close_output_stream(ost);
             return;
@@ -3475,12 +3483,7 @@ static int init_output_stream_encode(OutputStream *ost, AVFrame *frame)
             enc_ctx->bits_per_raw_sample = frame_bits_per_raw_sample;
         }
 
-        if (ost->top_field_first == 0) {
-            enc_ctx->field_order = AV_FIELD_BB;
-        } else if (ost->top_field_first == 1) {
-            enc_ctx->field_order = AV_FIELD_TT;
-        }
-
+        // Field order: autodetection
         if (frame) {
             if (enc_ctx->flags & (AV_CODEC_FLAG_INTERLACED_DCT | AV_CODEC_FLAG_INTERLACED_ME) &&
                 ost->top_field_first >= 0)
@@ -3493,6 +3496,13 @@ static int init_output_stream_encode(OutputStream *ost, AVFrame *frame)
                     enc_ctx->field_order = frame->top_field_first ? AV_FIELD_TB:AV_FIELD_BT;
             } else
                 enc_ctx->field_order = AV_FIELD_PROGRESSIVE;
+        }
+
+        // Field order: override
+        if (ost->top_field_first == 0) {
+            enc_ctx->field_order = AV_FIELD_BB;
+        } else if (ost->top_field_first == 1) {
+            enc_ctx->field_order = AV_FIELD_TT;
         }
 
         if (ost->forced_keyframes) {
@@ -3759,7 +3769,7 @@ static int transcode_init(void)
     /* init framerate emulation */
     for (i = 0; i < nb_input_files; i++) {
         InputFile *ifile = input_files[i];
-        if (ifile->rate_emu)
+        if (ifile->readrate || ifile->rate_emu)
             for (j = 0; j < ifile->nb_streams; j++)
                 input_streams[j + ifile->ist_index]->start = av_gettime_relative();
     }
@@ -4219,12 +4229,20 @@ static int get_input_packet_mt(InputFile *f, AVPacket **pkt)
 
 static int get_input_packet(InputFile *f, AVPacket **pkt)
 {
-    if (f->rate_emu) {
+    if (f->readrate || f->rate_emu) {
         int i;
+        int64_t file_start = copy_ts * (
+                              (f->ctx->start_time != AV_NOPTS_VALUE ? f->ctx->start_time * !start_at_zero : 0) +
+                              (f->start_time != AV_NOPTS_VALUE ? f->start_time : 0)
+                             );
+        float scale = f->rate_emu ? 1.0 : f->readrate;
         for (i = 0; i < f->nb_streams; i++) {
             InputStream *ist = input_streams[f->ist_index + i];
-            int64_t pts = av_rescale(ist->dts, 1000000, AV_TIME_BASE);
-            int64_t now = av_gettime_relative() - ist->start;
+            int64_t stream_ts_offset, pts, now;
+            if (!ist->nb_packets || (ist->decoding_needed && !ist->got_output)) continue;
+            stream_ts_offset = FFMAX(ist->first_dts != AV_NOPTS_VALUE ? ist->first_dts : 0, file_start);
+            pts = av_rescale(ist->dts, 1000000, AV_TIME_BASE);
+            now = (av_gettime_relative() - ist->start) * scale + stream_ts_offset;
             if (pts > now)
                 return AVERROR(EAGAIN);
         }

@@ -23,9 +23,8 @@
 
 #include <stdint.h>
 
-#include "libavutil/bprint.h"
-
 #include "libavcodec/avcodec.h"
+#include "libavcodec/bsf.h"
 
 #include "avformat.h"
 #include "os_support.h"
@@ -41,6 +40,12 @@
 #else
 #    define hex_dump_debug(class, buf, size) do { if (0) av_hex_dump_log(class, AV_LOG_DEBUG, buf, size); } while(0)
 #endif
+
+/**
+ * For an AVInputFormat with this flag set read_close() needs to be called
+ * by the caller upon read_header() failure.
+ */
+#define FF_FMT_INIT_CLEANUP                             (1 << 0)
 
 typedef struct AVCodecTag {
     enum AVCodecID id;
@@ -197,8 +202,6 @@ struct AVStreamInternal {
      * 1 if avctx has been initialized with the values from the codec parameters
      */
     int avctx_inited;
-
-    enum AVCodecID orig_codec_id;
 
     /* the context for extracting extradata in find_stream_info()
      * inited=1/bsf=NULL signals that extracting is not possible (codec not
@@ -533,32 +536,6 @@ int ff_get_line(AVIOContext *s, char *buf, int maxlen);
  * @return the length of the string written in the buffer
  */
 int ff_get_chomp_line(AVIOContext *s, char *buf, int maxlen);
-
-/**
- * Read a whole line of text from AVIOContext to an AVBPrint buffer. Stop
- * reading after reaching a \\r, a \\n, a \\r\\n, a \\0 or EOF.  The line
- * ending characters are NOT included in the buffer, but they are skipped on
- * the input.
- *
- * @param s the read-only AVIOContext
- * @param bp the AVBPrint buffer
- * @return the length of the read line, not including the line endings,
- *         negative on error.
- */
-int64_t ff_read_line_to_bprint(AVIOContext *s, AVBPrint *bp);
-
-/**
- * Read a whole line of text from AVIOContext to an AVBPrint buffer overwriting
- * its contents. Stop reading after reaching a \\r, a \\n, a \\r\\n, a \\0 or
- * EOF. The line ending characters are NOT included in the buffer, but they
- * are skipped on the input.
- *
- * @param s the read-only AVIOContext
- * @param bp the AVBPrint buffer
- * @return the length of the read line not including the line endings,
- *         negative on error, or if the buffer becomes truncated.
- */
-int64_t ff_read_line_to_bprint_overwrite(AVIOContext *s, AVBPrint *bp);
 
 #define SPACE_CHARS " \t\r\n"
 
@@ -939,6 +916,7 @@ int ff_reshuffle_raw_rgb(AVFormatContext *s, AVPacket **ppkt, AVCodecParameters 
  */
 int ff_get_packet_palette(AVFormatContext *s, AVPacket *pkt, int ret, uint32_t *palette);
 
+struct AVBPrint;
 /**
  * Finalize buf into extradata and set its size appropriately.
  */

@@ -553,7 +553,6 @@ static int convert_pix_fmt(enum AVPixelFormat pix_fmt)
     case AV_PIX_FMT_YUVJ444P:
     case AV_PIX_FMT_YUV444P9:
     case AV_PIX_FMT_YUV444P10: return X264_CSP_I444;
-#if CONFIG_LIBX264RGB_ENCODER
     case AV_PIX_FMT_BGR0:
         return X264_CSP_BGRA;
     case AV_PIX_FMT_BGR24:
@@ -561,7 +560,6 @@ static int convert_pix_fmt(enum AVPixelFormat pix_fmt)
 
     case AV_PIX_FMT_RGB24:
         return X264_CSP_RGB;
-#endif
     case AV_PIX_FMT_NV12:      return X264_CSP_NV12;
     case AV_PIX_FMT_NV16:
     case AV_PIX_FMT_NV20:      return X264_CSP_NV16;
@@ -749,6 +747,18 @@ static av_cold int X264_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_ERROR,
                "x264 too old for AVC Intra, at least version 142 needed\n");
 #endif
+
+    if (x4->avcintra_class > 200) {
+#if X264_BUILD < 164
+        av_log(avctx, AV_LOG_ERROR,
+                "x264 too old for AVC Intra 300/480, at least version 164 needed\n");
+        return AVERROR(EINVAL);
+#else
+        /* AVC-Intra 300/480 only supported by Sony XAVC flavor */
+        x4->params.i_avcintra_flavor = X264_AVCINTRA_FLAVOR_SONY;
+#endif
+    }
+
     if (x4->b_bias != INT_MIN)
         x4->params.i_bframe_bias              = x4->b_bias;
     if (x4->b_pyramid >= 0)
@@ -880,6 +890,11 @@ static av_cold int X264_init(AVCodecContext *avctx)
         }
     }
 
+#if X264_BUILD >= 142
+    /* Separate headers not supported in AVC-Intra mode */
+    if (x4->params.i_avcintra_class >= 0)
+        x4->params.b_repeat_headers = 1;
+#endif
 
     {
         AVDictionaryEntry *en = NULL;
@@ -1082,7 +1097,7 @@ static const AVOption options[] = {
     { "none",          NULL, 0, AV_OPT_TYPE_CONST, {.i64 = X264_NAL_HRD_NONE}, INT_MIN, INT_MAX, VE, "nal-hrd" },
     { "vbr",           NULL, 0, AV_OPT_TYPE_CONST, {.i64 = X264_NAL_HRD_VBR},  INT_MIN, INT_MAX, VE, "nal-hrd" },
     { "cbr",           NULL, 0, AV_OPT_TYPE_CONST, {.i64 = X264_NAL_HRD_CBR},  INT_MIN, INT_MAX, VE, "nal-hrd" },
-    { "avcintra-class","AVC-Intra class 50/100/200",                      OFFSET(avcintra_class),AV_OPT_TYPE_INT,     { .i64 = -1 }, -1, 200   , VE},
+    { "avcintra-class","AVC-Intra class 50/100/200/300/480",              OFFSET(avcintra_class),AV_OPT_TYPE_INT,    { .i64 = -1 }, -1, 480   , VE},
     { "me_method",    "Set motion estimation method",                     OFFSET(motion_est),    AV_OPT_TYPE_INT,    { .i64 = -1 }, -1, X264_ME_TESA, VE, "motion-est"},
     { "motion-est",   "Set motion estimation method",                     OFFSET(motion_est),    AV_OPT_TYPE_INT,    { .i64 = -1 }, -1, X264_ME_TESA, VE, "motion-est"},
     { "dia",           NULL, 0, AV_OPT_TYPE_CONST, { .i64 = X264_ME_DIA },  INT_MIN, INT_MAX, VE, "motion-est" },

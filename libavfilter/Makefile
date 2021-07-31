@@ -53,6 +53,7 @@ OBJS-$(CONFIG_AFFTFILT_FILTER)               += af_afftfilt.o
 OBJS-$(CONFIG_AFIR_FILTER)                   += af_afir.o
 OBJS-$(CONFIG_AFORMAT_FILTER)                += af_aformat.o
 OBJS-$(CONFIG_AFREQSHIFT_FILTER)             += af_afreqshift.o
+OBJS-$(CONFIG_AFWTDN_FILTER)                 += af_afwtdn.o
 OBJS-$(CONFIG_AGATE_FILTER)                  += af_agate.o
 OBJS-$(CONFIG_AIIR_FILTER)                   += af_aiir.o
 OBJS-$(CONFIG_AINTEGRAL_FILTER)              += af_aderivative.o
@@ -395,8 +396,7 @@ OBJS-$(CONFIG_ROTATE_FILTER)                 += vf_rotate.o
 OBJS-$(CONFIG_SAB_FILTER)                    += vf_sab.o
 OBJS-$(CONFIG_SCALE_FILTER)                  += vf_scale.o scale_eval.o
 OBJS-$(CONFIG_SCALE_CUDA_FILTER)             += vf_scale_cuda.o scale_eval.o \
-                                                vf_scale_cuda.ptx.o vf_scale_cuda_bicubic.ptx.o \
-                                                cuda/load_helper.o
+                                                vf_scale_cuda.ptx.o cuda/load_helper.o
 OBJS-$(CONFIG_SCALE_NPP_FILTER)              += vf_scale_npp.o scale_eval.o
 OBJS-$(CONFIG_SCALE_QSV_FILTER)              += vf_scale_qsv.o
 OBJS-$(CONFIG_SCALE_VAAPI_FILTER)            += vf_scale_vaapi.o scale_eval.o vaapi_vpp.o

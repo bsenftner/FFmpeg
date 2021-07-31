@@ -19,6 +19,9 @@
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
+
+#include "libavutil/avstring.h"
+#include "libavutil/channel_layout.h"
 #include "avformat.h"
 #include "internal.h"
 #include "libavutil/opt.h"
@@ -183,7 +186,6 @@ static int argo_cvg_read_header(AVFormatContext *s)
     par->channel_layout         = AV_CH_LAYOUT_MONO;
 
     par->bits_per_coded_sample  = 4;
-    par->bits_per_raw_sample    = 16;
     par->block_align            = ARGO_CVG_BLOCK_ALIGN;
     par->bit_rate               = par->sample_rate * par->bits_per_coded_sample;
 

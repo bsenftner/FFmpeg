@@ -20,6 +20,7 @@
  */
 
 #include <codec2/codec2.h>
+#include "libavutil/channel_layout.h"
 #include "avcodec.h"
 #include "libavutil/opt.h"
 #include "encode.h"
@@ -43,12 +44,6 @@ static const AVClass libcodec2_enc_class = {
     .class_name = "libcodec2 encoder",
     .item_name  = av_default_item_name,
     .option     = options,
-    .version    = LIBAVUTIL_VERSION_INT,
-};
-
-static const AVClass libcodec2_dec_class = {
-    .class_name = "libcodec2 decoder",
-    .item_name  = av_default_item_name,
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
@@ -194,7 +189,6 @@ const AVCodec ff_libcodec2_decoder = {
     .supported_samplerates  = (const int[]){ 8000, 0 },
     .sample_fmts            = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_NONE },
     .channel_layouts        = (const uint64_t[]) { AV_CH_LAYOUT_MONO, 0 },
-    .priv_class             = &libcodec2_dec_class,
 };
 
 const AVCodec ff_libcodec2_encoder = {
